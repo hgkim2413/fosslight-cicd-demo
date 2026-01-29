@@ -17,12 +17,13 @@ pipeline {
         }
         stage('2. 빌드 및 설치') {
             steps {
-                echo '--- [Dependency] 동적 분석을 위한 패키지 설치 ---'
-                sh 'pip install -r requirements.txt'
+                echo '--- [Debug] 설치된 패키지 확인 ---'
+                // pip list를 찍어서 로그에 psutil이 진짜 깔렸는지 확인용
+                sh 'pip list' 
 
-                echo '--- [Binary] 실행 파일 빌드 ---'
-                // 앱 이름: mysystem_monitor
-                sh 'pyinstaller --onefile --name mysystem_monitor src/main.py'
+                echo '--- [Binary] 실행 파일 빌드 (강제 포함 옵션 추가) ---'
+                // --hidden-import 옵션으로 누락 방지
+                sh 'pyinstaller --onefile --hidden-import=psutil --hidden-import=requests --hidden-import=colorama --name mysystem_monitor src/main.py'
             }
         }
         stage('3. Fosslight 검증') {
