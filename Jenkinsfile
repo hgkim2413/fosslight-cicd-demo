@@ -17,21 +17,25 @@ pipeline {
         }
         stage('2. 빌드 및 설치') {
             steps {
-                // Dependency: 실제 설치 (동적 분석)
+                echo '--- [Dependency] 동적 분석을 위한 패키지 설치 ---'
                 sh 'pip install -r requirements.txt'
-                // Binary: 실제 빌드 (표준 ELF 포맷)
-                sh 'pyinstaller --onefile --name real_app src/main.py'
+
+                echo '--- [Binary] 실행 파일 빌드 ---'
+                // 앱 이름: mysystem_monitor
+                sh 'pyinstaller --onefile --name mysystem_monitor src/main.py'
             }
         }
         stage('3. Fosslight 검증') {
             steps {
+                echo '--- 통합 스캔 수행 ---'
                 sh 'fosslight_scanner -p . -o fosslight_report'
             }
         }
     }
     post {
         always {
-            archiveArtifacts artifacts: 'fosslight_report/**/*', allowEmptyArchive: true
+            // 리포트와 실행 파일 모두 보관
+            archiveArtifacts artifacts: 'fosslight_report/**/*, dist/mysystem_monitor', allowEmptyArchive: true
         }
     }
 }
