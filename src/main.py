@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MIT
-# Copyright (c) 2024 Optimus Developer V2
+# Copyright (c) 2026 Optimus Developer v1
 
 import sys
 from flask import Flask
