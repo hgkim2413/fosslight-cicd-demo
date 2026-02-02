@@ -20,6 +20,9 @@ pipeline {
                 echo '--- [Dependency] 진짜 환경에 패키지 설치 ---'
                 sh 'pip install -r requirements.txt'
 
+                echo '--- [Debug] 설치된 패키지 확인 ---'
+                sh 'pip list'
+
                 echo '--- [Binary] 실행 파일 빌드 ---'
                 sh 'pyinstaller --onefile --hidden-import=psutil --hidden-import=requests --hidden-import=colorama --name mysystem_monitor src/main.py'
             }
@@ -34,7 +37,7 @@ pipeline {
             steps {
                 echo '--- [Policy] 라이선스 위반 여부 정밀 검사 ---'
                 script {
-                    // 즉석에서 파이썬 검사 스크립트 생성 (QualityGate.py)
+                    // Python 스크립트 생성 (시트 이름 수정됨: SRC -> SRC_FL_Source)
                     def pythonScript = """
 import os
 import sys
@@ -51,11 +54,11 @@ report_path = os.path.join(report_dir, files[0])
 print(f"[Info] 검사할 리포트: {report_path}")
 
 try:
-    # 2. 엑셀의 'SRC' 시트 읽기 (소스코드 분석 결과)
-    df = pd.read_excel(report_path, sheet_name='SRC')
+    # 2. 엑셀의 'SRC_FL_Source' 시트 읽기 (사용자가 알려준 정확한 시트명 사용)
+    # 필요하다면 'BIN_FL_Source', 'DEP_FL_Dependency'도 읽을 수 있음
+    df = pd.read_excel(report_path, sheet_name='SRC_FL_Source')
     
     # 3. 'License' 컬럼에서 'GPL' 글자가 들어간 것 찾기 (대소문자 무시)
-    # na=False는 빈칸은 무시하라는 뜻
     gpl_violation = df[df['License'].astype(str).str.contains('GPL', case=False, na=False)]
 
     if not gpl_violation.empty:
@@ -69,12 +72,14 @@ try:
     else:
         print("✅ [통과] GPL 라이선스가 발견되지 않았습니다. 안전합니다.")
 
+except ValueError as ve:
+    print(f"[Error] 시트를 찾을 수 없습니다: {ve}")
+    print("엑셀 파일에 'SRC_FL_Source' 시트가 있는지 확인해주세요.")
+    sys.exit(1)
 except Exception as e:
-    print(f"[Error] 검사 중 오류 발생: {e}")
-    # 시트가 없거나 엑셀이 깨지면 에러 처리
-    sys.exit(1) 
+    print(f"[Error] 검사 중 예상치 못한 오류 발생: {e}")
+    sys.exit(1)
 """
-                    // 작성한 내용을 파일로 저장
                     writeFile file: 'quality_check.py', text: pythonScript
                     
                     // 파이썬 스크립트 실행
